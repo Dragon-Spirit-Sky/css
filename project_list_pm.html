@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实训项目管理平台 - 项目列表</title>
+    <link rel="stylesheet" href="css/common_pm.css">
+    <style>
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #ebeef5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .modal-close {
+            cursor: pointer;
+            font-size: 20px;
+            color: #909399;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #ebeef5;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="logo">实训项目管理平台</div>
+        <nav class="nav-menu">
+            <a href="index_pm.html">首页</a>
+            <a href="project_list_pm.html" class="active">项目列表</a>
+        </nav>
+        <div class="user-info" id="user-info"></div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="card-title" style="margin-bottom: 0;">项目列表</div>
+                <button class="btn btn-primary" id="add-project-btn">新增项目</button>
+            </div>
+            
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>项目ID</th>
+                        <th>项目名称</th>
+                        <th>小组名称</th>
+                        <th>组长</th>
+                        <th>进度</th>
+                        <th>评分</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="project-table-body">
+                    <!-- 项目数据通过JS动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- 新增/编辑项目弹窗 -->
+    <div class="modal" id="project-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title">新增项目</div>
+                <div class="modal-close" onclick="closeModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <form id="project-form">
+                    <input type="hidden" id="project-id">
+                    
+                    <div class="form-group">
+                        <label class="form-label">项目名称</label>
+                        <input type="text" class="form-input" id="project-name" placeholder="请输入项目名称">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">小组名称</label>
+                        <input type="text" class="form-input" id="project-group" placeholder="请输入小组名称">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">组长</label>
+                        <input type="text" class="form-input" id="project-leader" placeholder="请输入组长姓名">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">项目进度(%)</label>
+                        <input type="number" class="form-input" id="project-progress" min="0" max="100" placeholder="请输入项目进度">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">项目成员（用逗号分隔）</label>
+                        <input type="text" class="form-input" id="project-members" placeholder="例如：张三,李四,王五">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveProject()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/common_pm.js"></script>
+    <script src="js/project_list_pm.js"></script>
+</body>
+</html>
