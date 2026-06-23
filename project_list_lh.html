@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>龙魂实训班级管理平台 - 班级列表</title>
+    <link rel="stylesheet" href="css/common_lh.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/css/layui.css">
+    <style>
+    .project-table-wrapper { overflow-x: auto; border-radius: 12px; }
+    .project-table-view { min-width: 700px; width: 100%; border-collapse: separate; border-spacing: 0; }
+    .project-table-view thead th {
+        background: rgba(150, 170, 200, 0.15);
+        color: #2e3a5c;
+        font-weight: bold;
+        padding: 16px 12px;
+        text-align: center;
+        border: none;
+        font-size: 15px;
+    }
+    .project-table-view tbody td {
+        padding: 14px 12px;
+        text-align: center;
+        border: none;
+        font-size: 14px;
+        color: #1e293b;
+        font-weight: 600;
+        transition: background-color 0.2s ease;
+    }
+    .project-table-view tbody tr {
+        background: transparent;
+        transition: background-color 0.2s ease;
+    }
+    .project-table-view tbody tr:hover {
+        background: rgba(100, 150, 255, 0.1);
+    }
+    .table-empty { text-align: center; padding: 60px 20px; }
+    .table-empty .empty-icon { font-size: 56px; display: inline-block; animation: float 3s ease-in-out infinite; }
+    .action-buttons { display: flex; gap: 8px; justify-content: center; }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+    
+    .card-enter {
+        animation: fadeInUp 0.4s ease forwards;
+        opacity: 0;
+    }
+    
+    .main {
+        animation: fadeInUp 0.5s ease;
+    }
+    
+    .btn-custom {
+        background: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        transition: none !important;
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+    .btn-custom::after {
+        background: currentColor !important;
+        box-shadow: 0 0 8px currentColor, 0 0 16px currentColor !important;
+        mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+        -webkit-mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+    }
+    .btn-custom:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    .btn-custom:active {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    .btn-primary-custom {
+        background: none !important;
+        border: none !important;
+    }
+    .btn-primary-custom:hover {
+        background: none !important;
+        box-shadow: none !important;
+    }
+    
+    .btn-danger-custom {
+        background: none !important;
+        border: none !important;
+        color: #ef4444 !important;
+        font-weight: 600 !important;
+    }
+    .btn-danger-custom::after {
+        background: currentColor !important;
+        box-shadow: 0 0 8px currentColor, 0 0 16px currentColor !important;
+        mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+        -webkit-mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+    }
+    .btn-danger-custom:hover {
+        background: none !important;
+        box-shadow: none !important;
+    }
+    
+    .card {
+        background: rgba(255, 255, 255, 0.9) !important;
+        border-radius: 24px !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        box-shadow: 0 8px 32px rgba(148, 163, 184, 0.15), 0 2px 8px rgba(148, 163, 184, 0.08);
+    }
+    
+    .user-info .layui-btn {
+        background: none;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .user-info .layui-btn:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    </style>
+</head>
+
+<body>
+    <!-- 头部导航 -->
+    <header class="header" id="header">
+        <div class="logo">龙魂实训班级管理平台</div>
+        <nav class="nav-menu">
+            <a href="index_lh.html">我的班级</a>
+            <a href="project_list_lh.html" class="active">班级列表</a>
+        </nav>
+        <div class="user-info" id="user-info"></div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="card-title" style="margin-bottom: 0;">📋 班级列表</div>
+                <button class="layui-btn btn-custom btn-primary-custom" id="add-project-btn">新增班级</button>
+            </div>
+
+            <div class="project-table-wrapper">
+            <table class="project-table-view">
+                <thead>
+                    <tr>
+                        <th>班级名称</th>
+                        <th>创建者</th>
+                        <th>成员</th>
+                        <th>小组</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="project-table-body">
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- 新增班级弹窗 -->
+    <div class="modal" id="create-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">新增班级</div>
+                <span class="modal-close" onclick="closeCreateModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">班级名称 *</label>
+                    <input type="text" id="create-name" class="form-input" placeholder="请输入班级名称" style="border-radius: 10px;">
+                    <div class="form-error" id="create-name-error"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">班级描述</label>
+                    <textarea id="create-desc" class="form-input" placeholder="请输入班级描述（选填）" rows="3" style="border-radius: 10px; resize: vertical;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="layui-btn layui-btn-primary btn-custom" onclick="closeCreateModal()">取消</button>
+                <button class="layui-btn btn-custom btn-primary-custom" onclick="createProject()">确认创建</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/layui.js"></script>
+    <script src="js/Bmob-3.0.2.min.js"></script>
+    <script src="js/bmob_init.js"></script>
+    <script src="js/common_lh.js"></script>
+    <script src="js/project_list_lh.js"></script>
+</body>
+
+</html>

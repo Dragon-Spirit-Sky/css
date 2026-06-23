@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>龙魂实训班级管理平台 - 个人中心</title>
+    <link rel="stylesheet" href="css/common_lh.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/css/layui.css">
+    <style>
+        .profile-card {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+        
+        .avatar-section {
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a8c0ff 0%, #c8b6f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            box-shadow: 0 6px 20px rgba(168, 192, 255, 0.25);
+        }
+        
+        .avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 28px rgba(102, 126, 234, 0.5);
+        }
+        
+        .avatar-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            font-size: 12px;
+            padding: 6px 0;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .avatar:hover .avatar-overlay {
+            opacity: 1;
+        }
+        
+        .avatar-hint {
+            font-size: 12px;
+            color: #909399;
+            margin-top: 8px;
+        }
+        
+        .info-section {
+            flex: 1;
+            min-width: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        .info-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            transition: background 0.2s ease;
+        }
+
+        .info-row:hover {
+            background: rgba(239, 246, 255, 0.35);
+            border-radius: 10px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #606266;
+            width: 72px;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+        
+        .info-value {
+            color: #303133;
+            font-size: 14px;
+        }
+        
+        .edit-btn {
+            margin-top: 12px;
+            color: #1e293b !important;
+            font-weight: 600 !important;
+        }
+        .edit-btn::after {
+            background: currentColor !important;
+            box-shadow: 0 0 8px currentColor, 0 0 16px currentColor !important;
+            mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+            -webkit-mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+        }
+
+        #edit-modal .layui-btn {
+            color: #1e293b !important;
+            font-weight: 600 !important;
+        }
+        #edit-modal .layui-btn::after {
+            background: currentColor !important;
+            box-shadow: 0 0 8px currentColor, 0 0 16px currentColor !important;
+            mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+            -webkit-mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+        }
+        
+        .record-list {
+            list-style: none;
+            max-height: 340px;
+            overflow-y: auto;
+        }
+
+        /* 隐藏滚动条但可滚动 */
+        html, body {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        html::-webkit-scrollbar, body::-webkit-scrollbar {
+            display: none;
+        }
+        .record-list::-webkit-scrollbar { display: none; }
+        .record-list { scrollbar-width: none; -ms-overflow-style: none; }
+
+        .user-detail-layout {
+            display: grid;
+            grid-template-columns: 480px 480px;
+            gap: 24px;
+            justify-content: center;
+            min-width: 860px;
+            margin-top: 20px;
+        }
+
+        .user-detail-layout > .card {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            padding-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .user-detail-layout {
+                grid-template-columns: 480px 480px;
+            }
+        }
+        
+        .record-item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            transition: background 0.2s ease;
+        }
+
+        .record-item:hover {
+            background: rgba(239, 246, 255, 0.35);
+            border-radius: 8px;
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+
+        .record-time {
+            font-size: 12px;
+            color: #a0a8b8;
+            margin-bottom: 5px;
+        }
+        
+        .avatar-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            padding: 10px 0;
+        }
+        
+        .avatar-option {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .avatar-option:hover {
+            transform: scale(1.1);
+            border-color: #667eea;
+        }
+        
+        .avatar-option.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        
+        .upload-preview:hover {
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header" id="header">
+        <div class="logo">龙魂实训班级管理平台</div>
+        <nav class="nav-menu">
+            <a href="index_lh.html">我的班级</a>
+            <a href="project_list_lh.html">班级列表</a>
+        </nav>
+        <div class="user-info" id="user-info"></div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main">
+        <div class="user-detail-layout">
+            <div class="card card-enter">
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>👤 个人信息</span>
+                    <button class="layui-btn layui-btn-sm edit-btn" onclick="openEditModal()">✏️ 编辑资料</button>
+                </div>
+                <div class="profile-card">
+                    <div class="avatar-section">
+                        <div class="avatar" id="user-avatar" onclick="openAvatarPicker()" title="点击更换头像">
+                            <span id="avatar-text">-</span>
+                            <div class="avatar-overlay">更换头像</div>
+                        </div>
+                        <div class="avatar-hint">点击头像更换</div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-row">
+                            <div class="info-icon" style="background: #e8f0fe; color: #1976d2;">👤</div>
+                            <span class="info-label">用户名</span>
+                            <span class="info-value" id="user-username">-</span>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-icon" id="gender-icon" style="background: #f3e5f5; color: #9c27b0;">⚧</div>
+                            <span class="info-label">性别</span>
+                            <span class="info-value" id="user-gender">未设置</span>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-icon" style="background: #e8f5e9; color: #4caf50;">📱</div>
+                            <span class="info-label">手机号</span>
+                            <span class="info-value" id="user-phone">-</span>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-icon" style="background: #fff3e0; color: #ff9800;">🎓</div>
+                            <span class="info-label">学号</span>
+                            <span class="info-value" id="user-studentid">未设置</span>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-icon" style="background: #e3f2fd; color: #5c6bc0;">📅</div>
+                            <span class="info-label">注册时间</span>
+                            <span class="info-value" id="user-createtime">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-enter" style="animation-delay: 0.15s;">
+                <div class="card-title">📋 操作记录</div>
+                <ul id="record-list" class="record-list">
+                </ul>
+            </div>
+    </main>
+
+    <!-- 编辑资料弹窗 -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <div class="modal-title">✏️ 编辑个人信息</div>
+                <div class="modal-close" onclick="closeModal('edit-modal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">👤 用户名</label>
+                    <input type="text" class="form-input layui-input" id="edit-username" placeholder="请输入用户名（2-16位）" maxlength="16">
+                    <div class="error-text" id="edit-username-error"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🎓 学号</label>
+                    <input type="text" class="form-input layui-input" id="edit-studentid" placeholder="请输入学号" maxlength="20">
+                    <div class="error-text" id="edit-studentid-error"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">⚧ 性别</label>
+                    <div style="display: flex; gap: 16px; padding: 4px 0;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 14px; border-radius: 20px; background: #e3f2fd; transition: all 0.2s;">
+                            <input type="radio" name="edit-gender" value="男"> ♂ 男
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 14px; border-radius: 20px; background: #fce4ec; transition: all 0.2s;">
+                            <input type="radio" name="edit-gender" value="女"> ♀ 女
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 14px; border-radius: 20px; background: #f3e5f5; transition: all 0.2s;">
+                            <input type="radio" name="edit-gender" value="保密" checked> ⚧ 保密
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">📱 手机号</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="edit-phone-display" style="color: #374151; font-size: 14px;">-</span>
+                        <button type="button" class="layui-btn layui-btn-xs" style="color: #06b6d4 !important;" onclick="closeModal('edit-modal'); openPhoneModal();">修改手机号</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="layui-btn layui-btn-sm" style="color: #000000 !important;" onclick="closeModal('edit-modal')">取消</button>
+                <button class="layui-btn layui-btn-sm" style="color: #000000 !important;" onclick="saveUserInfo()">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 头像选择弹窗 -->
+    <div class="modal" id="avatar-modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <div class="modal-title">🎨 选择头像</div>
+                <div class="modal-close" onclick="closeModal('avatar-modal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="display: inline-block; width: 80px; height: 80px; border-radius: 50%; border: 2px dashed #cfd8dc; overflow: hidden; cursor: pointer;" 
+                         id="upload-preview" onclick="document.getElementById('avatar-file-input').click()"
+                         title="点击上传自定义图片">
+                        <div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #909399; font-size: 13px;" id="upload-hint">
+                            📷<br>上传图片
+                        </div>
+                        <img id="upload-preview-img" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+                    <div style="margin-top: 8px; font-size: 12px; color: #909399;">或选择下方预设头像</div>
+                </div>
+                <div class="avatar-picker" id="avatar-picker">
+                    <!-- 动态生成头像选项 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="layui-btn layui-btn-sm" style="color: #000000 !important;" onclick="closeModal('avatar-modal')">取消</button>
+                <button class="layui-btn layui-btn-sm" style="color: #000000 !important;" onclick="confirmAvatar()">确认选择</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改手机号弹窗 -->
+    <div class="modal" id="phone-modal">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <div class="modal-title">📱 修改手机号</div>
+                <div class="modal-close" onclick="closeModal('phone-modal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">新手机号</label>
+                    <input type="text" class="form-input layui-input" id="new-phone" placeholder="请输入11位手机号" maxlength="11">
+                    <div class="error-text" id="new-phone-error"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">短信验证码</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" class="form-input layui-input" id="phone-sms-code" placeholder="6位验证码" maxlength="6" style="flex: 1;">
+                        <button type="button" class="layui-btn layui-btn-sm" id="phone-send-sms-btn" onclick="sendPhoneSmsCode()" style="white-space: nowrap; color: #000000 !important;">发送验证码</button>
+                    </div>
+                    <div class="error-text" id="phone-sms-error"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="layui-btn layui-btn-sm" style="color: #000000 !important;" onclick="closeModal('phone-modal')">取消</button>
+                <button class="layui-btn layui-btn-sm" style="color: #000000 !important;" onclick="savePhone()">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/layui.js"></script>
+    <script src="js/Bmob-3.0.2.min.js"></script>
+    <script src="js/bmob_init.js"></script>
+    <script src="js/common_lh.js"></script>
+    <script src="js/user_detail_lh.js"></script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成员评价列表 - 龙魂实训</title>
+    <link rel="stylesheet" href="css/common_lh.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/css/layui.css">
+    <style>
+        .rating-table-wrapper { overflow-x: auto; border-radius: 12px; }
+        .rating-table { min-width: 700px; width: 100%; border-collapse: separate; border-spacing: 0; }
+        .rating-table thead th {
+            background: rgba(150, 170, 200, 0.15);
+            color: #2e3a5c;
+            font-weight: bold;
+            padding: 16px 12px;
+            text-align: center;
+            border: none;
+            font-size: 15px;
+        }
+        .rating-table tbody td {
+            padding: 14px 12px;
+            text-align: center;
+            border: none;
+            font-size: 14px;
+            color: #1e293b;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        .rating-table tbody tr {
+            background: transparent;
+            transition: background-color 0.2s ease;
+        }
+        .rating-table tbody tr:hover {
+            background: rgba(100, 150, 255, 0.1);
+        }
+        .table-empty { text-align: center; padding: 60px 20px; }
+        .table-empty .empty-icon { font-size: 56px; display: inline-block; animation: float 3s ease-in-out infinite; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .card-enter { animation: fadeInUp 0.4s ease forwards; opacity: 0; }
+        .main { animation: fadeInUp 0.5s ease; }
+        .btn-custom {
+            background: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            transition: none !important;
+            color: #1e293b !important;
+            font-weight: 600 !important;
+        }
+        .btn-custom::after {
+            background: currentColor !important;
+            box-shadow: 0 0 8px currentColor, 0 0 16px currentColor !important;
+            mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+            -webkit-mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent) !important;
+        }
+        .btn-custom:hover { transform: none !important; box-shadow: none !important; }
+        .btn-custom:active { transform: none !important; box-shadow: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">🐉</div>
+                <h1 class="title">龙魂实训班级管理平台</h1>
+            </div>
+            <div class="header-right">
+                <span class="user-info" id="user-info-display">👤 用户</span>
+                <a href="login_lh.html" class="logout-btn" id="logout-btn">退出登录</a>
+            </div>
+        </div>
+        <main class="main">
+            <div class="card card-enter" style="animation-delay: 0.05s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="font-size: 24px; color: #ffffff; margin: 0;" id="page-title">📊 成员评价列表</h1>
+                        <span style="color: rgba(255,255,255,0.7); font-size: 14px;" id="project-name-display"></span>
+                    </div>
+                    <a href="#" id="back-to-detail" class="layui-btn layui-btn-sm" style="color: #ffffff !important;">← 返回班级详情</a>
+                </div>
+                <div class="rating-table-wrapper">
+                    <table class="rating-table" id="rating-table">
+                        <thead>
+                            <tr>
+                                <th>成员姓名</th>
+                                <th>总平均分</th>
+                                <th>网页设计合理性</th>
+                                <th>功能实现程度</th>
+                                <th>界面美观度</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rating-table-body">
+                            <tr class="table-empty">
+                                <td colspan="6">
+                                    <div class="empty-icon">📭</div>
+                                    <div style="color: #6b7280; margin-top: 12px;">暂无评价数据</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/layui.js"></script>
+    <script src="js/Bmob-3.0.2.min.js"></script>
+    <script src="js/bmob_init.js"></script>
+    <script src="js/common_lh.js"></script>
+    <script>
+    (async function() {
+        var params = new URLSearchParams(window.location.search);
+        var projectId = params.get('id');
+        var project = await fetchProjectById(projectId);
+        var currentUser = getCurrentUser();
+        var userId = currentUser ? (currentUser.objectId || currentUser.id) : null;
+
+        if (!currentUser) { window.location.href = 'login_lh.html'; return; }
+        if (!project) {
+            showToast('班级不存在', 'error');
+            setTimeout(function() { window.location.href = 'project_list_lh.html'; }, 1500);
+            return;
+        }
+
+        var role = await getUserRoleInProject(project.objectId, userId);
+        if (role !== 'teacher') {
+            showToast('仅老师可查看', 'error');
+            setTimeout(function() { window.location.href = 'project_detail_lh.html?id=' + projectId; }, 1500);
+            return;
+        }
+
+        document.getElementById('user-info-display').textContent = '👤 ' + currentUser.username;
+        document.getElementById('project-name-display').textContent = '班级：' + project.name;
+        document.getElementById('back-to-detail').href = 'project_detail_lh.html?id=' + projectId;
+
+        var memberStats = {};
+        project.members.forEach(function(m) {
+            memberStats[m.userId] = {
+                name: m.username,
+                designScores: [],
+                functionScores: [],
+                uiScores: [],
+                allScores: []
+            };
+        });
+
+        (project.groups || []).forEach(function(g) {
+            (g.memberRatings || []).forEach(function(r) {
+                var stats = memberStats[r.targetUserId];
+                if (!stats) return;
+                stats.designScores.push(r.designScore || 0);
+                stats.functionScores.push(r.functionScore || 0);
+                stats.uiScores.push(r.uiScore || 0);
+                stats.allScores.push(r.designScore || 0);
+                stats.allScores.push(r.functionScore || 0);
+                stats.allScores.push(r.uiScore || 0);
+            });
+        });
+
+        function avg(arr) {
+            if (arr.length === 0) return '-';
+            return (arr.reduce(function(s, v) { return s + v; }, 0) / arr.length).toFixed(1);
+        }
+
+        var hasData = false;
+        var tbody = document.getElementById('rating-table-body');
+        tbody.innerHTML = '';
+        project.members.forEach(function(m) {
+            var s = memberStats[m.userId];
+            if (s.allScores.length === 0) return;
+            hasData = true;
+            var totalAvg = avg(s.allScores);
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td>' + m.username + '</td>' +
+                '<td style="color:#1e3a8a; font-weight:700;">' + totalAvg + '</td>' +
+                '<td>' + avg(s.designScores) + '</td>' +
+                '<td>' + avg(s.functionScores) + '</td>' +
+                '<td>' + avg(s.uiScores) + '</td>' +
+                '<td><a href="member_rating_detail_lh.html?id=' + projectId + '&userId=' + m.userId + '" class="layui-btn layui-btn-xs btn-custom">查看详情</a></td>';
+            tbody.appendChild(tr);
+        });
+
+        if (!hasData) {
+            tbody.innerHTML = '<tr class="table-empty"><td colspan="6"><div class="empty-icon">📭</div><div style="color:#6b7280;margin-top:12px;">暂无评价数据</div></td></tr>';
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            sessionStorage.removeItem('currentUser_lh');
+            window.location.href = 'login_lh.html';
+        });
+    })();
+    </script>
+</body>
+</html>

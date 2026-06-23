@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>站内信 - 龙魂实训班级管理平台</title>
+    <link rel="stylesheet" href="css/common_lh.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/css/layui.css">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+    </style>
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="logo">龙魂实训班级管理平台</div>
+        <nav class="nav-menu">
+            <a href="index_lh.html">我的班级</a>
+            <a href="project_list_lh.html">班级列表</a>
+        </nav>
+        <div class="user-info" id="user-info"></div>
+    </header>
+
+    <div class="chat-container">
+        <div class="chat-sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" onclick="openSearchModal()">+ 创建</button>
+            </div>
+            <div class="contact-list" id="contact-list">
+                <div class="chat-empty" style="font-size:13px;padding:40px 0;">暂无联系人</div>
+            </div>
+        </div>
+        <div class="chat-main" id="chat-main">
+            <div class="chat-empty" id="chat-empty">👈 选择一个联系人开始聊天</div>
+            <div class="chat-header" id="chat-header" style="display:none;"></div>
+            <div class="chat-messages" id="chat-messages" style="display:none;"></div>
+            <div class="chat-input-area" id="chat-input-area" style="display:none;">
+                <input type="text" class="chat-input" id="chat-input" placeholder="输入消息…" maxlength="500" onkeydown="if(event.key==='Enter')sendMessage()">
+                <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/layui.js"></script>
+    <script src="js/bmob_init.js"></script>
+    <script src="js/common_lh.js"></script>
+    <script src="js/messages_lh.js"></script>
+</body>
+</html>

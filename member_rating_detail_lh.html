@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评价详情 - 龙魂实训</title>
+    <link rel="stylesheet" href="css/common_lh.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/css/layui.css">
+    <style>
+        .stat-cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+        .stat-card {
+            flex: 1; min-width: 140px; text-align: center;
+            background: rgba(255,255,255,0.8); border-radius: 12px; padding: 20px 16px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 6px -1px rgba(219,234,254,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .stat-card .stat-value { font-size: 28px; font-weight: bold; color: #1e3a8a; }
+        .stat-card .stat-label { font-size: 13px; color: #6b7280; margin-top: 4px; }
+        .rating-detail-table { min-width: 600px; width: 100%; border-collapse: separate; border-spacing: 0; }
+        .rating-detail-table thead th {
+            background: rgba(150, 170, 200, 0.15); color: #2e3a5c; font-weight: bold;
+            padding: 14px 10px; text-align: center; border: none; font-size: 14px;
+        }
+        .rating-detail-table tbody td {
+            padding: 12px 10px; text-align: center; border: none; font-size: 13px;
+            color: #1e293b; font-weight: 600;
+        }
+        .rating-detail-table tbody tr { background: transparent; transition: background-color 0.2s ease; }
+        .rating-detail-table tbody tr:hover { background: rgba(100, 150, 255, 0.1); }
+        .table-empty { text-align: center; padding: 40px 20px; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-enter { animation: fadeInUp 0.4s ease forwards; opacity: 0; }
+        .main { animation: fadeInUp 0.5s ease; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">🐉</div>
+                <h1 class="title">龙魂实训班级管理平台</h1>
+            </div>
+            <div class="header-right">
+                <span class="user-info" id="user-info-display">👤 用户</span>
+                <a href="login_lh.html" class="logout-btn" id="logout-btn">退出登录</a>
+            </div>
+        </div>
+        <main class="main">
+            <div class="card card-enter" style="animation-delay: 0.05s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="font-size: 24px; color: #ffffff; margin: 0;" id="page-title">📋 评价详情</h1>
+                        <span style="color: rgba(255,255,255,0.7); font-size: 14px;" id="member-name-display"></span>
+                    </div>
+                    <a href="#" id="back-to-list" class="layui-btn layui-btn-sm" style="color: #ffffff !important;">← 返回评价列表</a>
+                </div>
+
+                <div class="stat-cards" id="stat-cards">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total">-</div>
+                        <div class="stat-label">总平均分</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-design">-</div>
+                        <div class="stat-label">网页设计合理性</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-function">-</div>
+                        <div class="stat-label">功能实现程度</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-ui">-</div>
+                        <div class="stat-label">界面美观度</div>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto; border-radius: 12px;">
+                    <table class="rating-detail-table" id="detail-table">
+                        <thead>
+                            <tr>
+                                <th>评分人</th>
+                                <th>网页设计合理性</th>
+                                <th>功能实现程度</th>
+                                <th>界面美观度</th>
+                                <th>评分时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-table-body">
+                            <tr class="table-empty">
+                                <td colspan="5">
+                                    <div style="font-size: 40px;">📭</div>
+                                    <div style="color: #6b7280; margin-top: 8px;">暂无评分记录</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/layui.js"></script>
+    <script src="js/Bmob-3.0.2.min.js"></script>
+    <script src="js/bmob_init.js"></script>
+    <script src="js/common_lh.js"></script>
+    <script>
+    (async function() {
+        var params = new URLSearchParams(window.location.search);
+        var projectId = params.get('id');
+        var targetUserId = params.get('userId');
+        var project = await fetchProjectById(projectId);
+        var currentUser = getCurrentUser();
+        var userId = currentUser ? (currentUser.objectId || currentUser.id) : null;
+
+        if (!currentUser) { window.location.href = 'login_lh.html'; return; }
+        if (!project) {
+            showToast('班级不存在', 'error');
+            setTimeout(function() { window.location.href = 'project_list_lh.html'; }, 1500);
+            return;
+        }
+        var role = await getUserRoleInProject(project.objectId, userId);
+        if (role !== 'teacher') {
+            showToast('仅老师可查看', 'error');
+            setTimeout(function() { window.location.href = 'project_detail_lh.html?id=' + projectId; }, 1500);
+            return;
+        }
+
+        var member = project.members.find(function(m) { return m.userId == targetUserId; });
+        var memberName = member ? member.username : '未知';
+        document.getElementById('user-info-display').textContent = '👤 ' + currentUser.username;
+        document.getElementById('member-name-display').textContent = '班级：' + project.name + ' ｜ 成员：' + memberName;
+        document.getElementById('back-to-list').href = 'member_ratings_lh.html?id=' + projectId;
+
+        var allRatings = [];
+        (project.groups || []).forEach(function(g) {
+            (g.memberRatings || []).forEach(function(r) {
+                if (r.targetUserId == targetUserId) allRatings.push(r);
+            });
+        });
+
+        function avg(arr) {
+            if (arr.length === 0) return '-';
+            return (arr.reduce(function(s, v) { return s + v; }, 0) / arr.length).toFixed(1);
+        }
+
+        var designScores = allRatings.map(function(r) { return r.designScore || 0; });
+        var functionScores = allRatings.map(function(r) { return r.functionScore || 0; });
+        var uiScores = allRatings.map(function(r) { return r.uiScore || 0; });
+        var allNum = designScores.concat(functionScores).concat(uiScores);
+
+        document.getElementById('stat-total').textContent = avg(allNum);
+        document.getElementById('stat-design').textContent = avg(designScores);
+        document.getElementById('stat-function').textContent = avg(functionScores);
+        document.getElementById('stat-ui').textContent = avg(uiScores);
+
+        var tbody = document.getElementById('detail-table-body');
+        if (allRatings.length === 0) {
+            tbody.innerHTML = '<tr class="table-empty"><td colspan="5"><div style="font-size:40px;">📭</div><div style="color:#6b7280;margin-top:8px;">暂无评分记录</div></td></tr>';
+        } else {
+            tbody.innerHTML = '';
+            allRatings.forEach(function(r) {
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' + (r.raterName || '未知') + '</td>' +
+                    '<td>' + (r.designScore != null ? r.designScore : '-') + '</td>' +
+                    '<td>' + (r.functionScore != null ? r.functionScore : '-') + '</td>' +
+                    '<td>' + (r.uiScore != null ? r.uiScore : '-') + '</td>' +
+                    '<td style="font-size:12px;color:#6b7280;">' + (r.time || '-') + '</td>';
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            sessionStorage.removeItem('currentUser_lh');
+            window.location.href = 'login_lh.html';
+        });
+    })();
+    </script>
+</body>
+</html>

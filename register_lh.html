@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>龙魂实训班级管理平台 - 注册</title>
+    
+    <!-- 终极防缓存 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <link rel="stylesheet" href="css/common_lh.css?v=2026061506">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/css/layui.css">
+    <style>
+        html {
+            overflow: auto;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            min-width: 1040px;
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        .auth-wrapper {
+            display: flex;
+            width: 1000px;
+            min-height: 620px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            overflow: hidden;
+            align-items: stretch;
+        }
+
+        .auth-left {
+            width: 540px;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 0 60px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            box-shadow: 0 0 30px rgba(20, 184, 166, 0.15);
+        }
+
+        .logo-icon {
+            font-size: 40px;
+            color: #14b8a6;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(20, 184, 166, 0.5);
+        }
+
+        .platform-name {
+            font-size: 42px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .platform-en {
+            font-size: 18px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+            text-align: left;
+        }
+
+        .platform-desc {
+            font-size: 16px;
+            color: rgba(255,255,255,0.55);
+            text-align: left;
+            line-height: 1.7;
+            margin-bottom: 40px;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+
+        .feature-item {
+            font-size: 15px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #14b8a6;
+            box-shadow: 0 0 10px rgba(20, 184, 166, 0.6);
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .auth-right {
+            width: 460px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+        }
+
+        .auth-card {
+            width: 400px;
+            background: transparent;
+            border-radius: 20px;
+            padding: 40px;
+        }
+
+        .tab-group {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            outline: none;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .form-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .form-subtitle {
+            font-size: 15px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s;
+            outline: none;
+            box-sizing: border-box;
+            color: #fff;
+        }
+
+        .form-input:focus {
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15), 0 0 12px rgba(20, 184, 166, 0.1);
+            background: rgba(255,255,255,0.12);
+        }
+
+        .form-input:-webkit-autofill,
+        .form-input:-webkit-autofill:hover,
+        .form-input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px rgba(255,255,255,0.08) inset !important;
+            -webkit-text-fill-color: #fff !important;
+            transition: background-color 5000s ease-in-out 0s;
+            caret-color: #fff;
+        }
+
+        .layui-input:-webkit-autofill,
+        .layui-input:-webkit-autofill:hover,
+        .layui-input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px rgba(255,255,255,0.08) inset !important;
+            -webkit-text-fill-color: #fff !important;
+            transition: background-color 5000s ease-in-out 0s;
+            caret-color: #fff;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 5px;
+            outline: none;
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 24px rgba(20, 184, 166, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .error-text {
+            color: #f87171;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        ::placeholder {
+            color: rgba(255,255,255,0.35);
+            opacity: 1;
+            font-size: 14px;
+        }
+
+        :-ms-input-placeholder { color: rgba(255,255,255,0.35); }
+        ::-ms-input-placeholder { color: rgba(255,255,255,0.35); }
+
+        #header {
+            display: none !important;
+        }
+
+        .layui-input {
+            background: rgba(255,255,255,0.08) !important;
+            border-color: rgba(255,255,255,0.15) !important;
+            color: #fff !important;
+            border-radius: 12px !important;
+        }
+        .layui-input:focus {
+            border-color: #14b8a6 !important;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15) !important;
+        }
+
+        #send-sms-btn {
+            background: #14b8a6 !important;
+            border-color: #14b8a6 !important;
+            color: #fff !important;
+            border-radius: 8px !important;
+        }
+
+        .form-group label a {
+            color: #14b8a6;
+        }
+
+        .custom-checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .custom-checkbox input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .checkmark {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.6);
+            border-radius: 4px;
+            background: transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .custom-checkbox:hover .checkmark {
+            border-color: #14b8a6;
+        }
+        .custom-checkbox:hover {
+            transform: scale(1.03);
+        }
+        .custom-checkbox:active {
+            transform: scale(0.97);
+        }
+        .custom-checkbox input:checked + .checkmark {
+            background: linear-gradient(135deg, #3b82f6, #14b8a6);
+            border-color: transparent;
+        }
+        .custom-checkbox input:checked + .checkmark::after {
+            content: '';
+            width: 5px;
+            height: 9px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-top: -2px;
+        }
+        .check-text {
+            color: #f0f9ff;
+            text-shadow: 0 0 3px rgba(0,0,0,0.3);
+            transition: color 0.2s ease;
+        }
+        .custom-checkbox:hover .check-text {
+            color: #14b8a6;
+        }
+        .custom-checkbox input:checked ~ .check-text {
+            color: #14b8a6;
+        }
+
+        /* 从左到右逐字显现动画 */
+        .reveal-text {
+            opacity: 0;
+            animation: revealLeft 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+        @keyframes revealLeft {
+            from {
+                clip-path: inset(0 100% 0 0);
+                opacity: 0;
+            }
+            to {
+                clip-path: inset(0 0 0 0);
+                opacity: 1;
+            }
+        }
+        .reveal-delay-1 { animation-delay: 0.1s; }
+        .reveal-delay-2 { animation-delay: 0.2s; }
+        .reveal-delay-3 { animation-delay: 0.3s; }
+        .reveal-delay-4 { animation-delay: 0.4s; }
+        .reveal-delay-5 { animation-delay: 0.5s; }
+        .reveal-delay-6 { animation-delay: 0.6s; }
+        .reveal-delay-7 { animation-delay: 0.7s; }
+
+        .auth-right .reveal-text {
+            animation-duration: 0.6s;
+        }
+
+        .tab-btn:active {
+            transform: scale(0.92);
+        }
+        .tab-btn:not(.active):hover {
+            color: rgba(255,255,255,0.8);
+        }
+    </style>
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="logo">龙魂实训班级管理平台</div>
+        <nav class="nav-menu">
+            <a href="index_lh.html">我的班级</a>
+        </nav>
+        <div class="user-info" id="user-info"></div>
+    </header>
+
+    <div class="auth-wrapper">
+        <div class="auth-left">
+            <div class="logo reveal-text">
+                <div class="logo-icon">L</div>
+            </div>
+            <div class="platform-name reveal-text reveal-delay-1">龙魂实训班级管理平台</div>
+            <div class="platform-en reveal-text reveal-delay-2">LongHun Training Project Platform</div>
+            <div class="platform-desc reveal-text reveal-delay-3">
+                简洁便利的实训作业辅助管理平台<br>
+                支持团队协作、进度跟踪、成果展示与评分
+            </div>
+            <ul class="feature-list">
+                <li class="feature-item reveal-text reveal-delay-4">
+                    <span class="feature-dot"></span>
+                    团队班级管理
+                </li>
+                <li class="feature-item reveal-text reveal-delay-5">
+                    <span class="feature-dot"></span>
+                    实时进度跟踪
+                </li>
+                <li class="feature-item reveal-text reveal-delay-6">
+                    <span class="feature-dot"></span>
+                    邀请码快速加入
+                </li>
+            </ul>
+        </div>
+
+        <div class="auth-right">
+            <div class="auth-card">
+                <div class="tab-group reveal-text reveal-delay-1">
+                    <button class="tab-btn" onclick="switchTabWithEffect('login_lh.html', this)">登录</button>
+                    <button class="tab-btn active" onclick="switchTabWithEffect('register_lh.html', this)">注册</button>
+                </div>
+
+                <div class="form-title reveal-text reveal-delay-2">注册账户</div>
+                <div class="form-subtitle reveal-text reveal-delay-3">创建账户，开始管理你的实训班级</div>
+
+                <form id="register-form">
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-input layui-input" id="username" placeholder="请输入用户名（2-16位中英文或数字）">
+                        <div class="error-text" id="username-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">手机号</label>
+                        <input type="text" class="form-input layui-input" id="phone" placeholder="请输入11位手机号" maxlength="11">
+                        <div class="error-text" id="phone-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">短信验证码</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" class="form-input layui-input" id="sms-code" placeholder="请输入6位验证码" maxlength="6" style="flex: 1;">
+                            <button type="button" id="send-sms-btn" class="layui-btn layui-btn-sm" style="white-space: nowrap;" onclick="sendSmsCode()">发送验证码</button>
+                        </div>
+                        <div class="error-text" id="sms-code-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <input type="password" class="form-input layui-input" id="password" placeholder="请输入密码（6-16位）" autocomplete="new-password">
+                        <div class="error-text" id="password-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">确认密码</label>
+                        <input type="password" class="form-input layui-input" id="confirm-password" placeholder="请再次输入密码" autocomplete="new-password">
+                        <div class="error-text" id="confirm-password-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="custom-checkbox" style="font-size: 14px;">
+                            <input type="checkbox" id="agree-terms">
+                            <span class="checkmark"></span>
+                            <span class="check-text">我已阅读并同意</span>
+                            <a href="terms_lh.html" target="_blank" style="color: #14b8a6;">《用户服务协议》</a>
+                        </label>
+                        <div class="error-text" id="agree-terms-error"></div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">立即注册</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/layui.js"></script>
+    <script src="js/Bmob-3.0.2.min.js"></script>
+    <script src="js/bmob_init.js"></script>
+    <script src="js/common_lh.js?v=2026061506"></script>
+    <script src="js/register_lh.js?v=2026061506"></script>
+    <script>
+        function switchTabWithEffect(url, btn) {
+            btn.style.transform = 'scale(0.92)';
+            btn.style.transition = 'transform 0.12s ease';
+            setTimeout(function() {
+                btn.style.transform = 'scale(1)';
+                setTimeout(function() {
+                    window.location.href = url;
+                }, 80);
+            }, 120);
+        }
+    </script>
+</body>
+</html>

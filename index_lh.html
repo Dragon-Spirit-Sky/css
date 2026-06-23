@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>龙魂实训班级管理平台 - 我的班级</title>
+    <link rel="stylesheet" href="css/common_lh.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/css/layui.css">
+    <style>
+    .project-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+    }
+    .project-card {
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(148, 163, 184, 0.15), 0 2px 8px rgba(148, 163, 184, 0.08);
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+    .project-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(148, 163, 184, 0.2), 0 4px 12px rgba(148, 163, 184, 0.1);
+        border-color: #14b8a6;
+        background: rgba(255, 255, 255, 0.75);
+    }
+    .project-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    .project-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e3a8a;
+        text-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+    }
+    .project-role {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        color: white;
+        font-weight: 500;
+    }
+    .role-teacher { background: linear-gradient(135deg, #e53935 0%, #f56c6c 100%); }
+    .role-member { background: linear-gradient(135deg, #1976d2 0%, #4db6ac 100%); }
+    
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: #1e3a8a;
+    }
+    .empty-state-icon {
+        font-size: 72px;
+        margin-bottom: 24px;
+        color: #cfd8dc;
+    }
+    
+    .action-bar {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .card {
+        background: rgba(255, 255, 255, 0.1) !important;
+    }
+    .card-title {
+        color: #1e3a8a !important;
+    }
+
+    /* 创建/加入班级弹窗美化 */
+    #create-modal .modal-content,
+    #join-modal .modal-content {
+        overflow: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    #create-modal .modal-content::-webkit-scrollbar,
+    #join-modal .modal-content::-webkit-scrollbar {
+        display: none;
+    }
+    #create-modal form,
+    #join-modal form {
+        padding: 24px 28px 20px;
+    }
+    #create-modal .form-group,
+    #join-modal .form-group {
+        margin-bottom: 20px;
+    }
+    #create-modal .layui-input,
+    #join-modal .layui-input {
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: rgba(255, 255, 255, 0.7);
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    #create-modal .layui-input:focus,
+    #join-modal .layui-input:focus {
+        border-color: #1e3a8a;
+        box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+        outline: none;
+    }
+
+    #create-modal .layui-btn,
+    #join-modal .layui-btn {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+        background: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+    #create-modal .layui-btn::after,
+    #join-modal .layui-btn::after {
+        background: #1e293b !important;
+        box-shadow: 0 0 8px rgba(30,41,59,0.6), 0 0 16px rgba(30,41,59,0.3) !important;
+    }
+</style>
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header" id="header">
+        <div class="logo">龙魂实训班级管理平台</div>
+        <nav class="nav-menu">
+            <a href="index_lh.html" class="active">我的班级</a>
+            <a href="project_list_lh.html">班级列表</a>
+        </nav>
+        <div class="user-info" id="user-info"></div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="card-title" style="margin-bottom: 0;">我的班级</div>
+                <div class="action-bar">
+                    <button class="layui-btn" id="create-project-btn">创建班级</button>
+                    <button class="layui-btn layui-btn-warm" id="join-project-btn">加入班级</button>
+                </div>
+            </div>
+
+            <!-- 空状态提示 (必须有 id="empty-state") -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📂</div>
+                <h3>你还没有加入任何班级</h3>
+                <p>点击右上角的“创建班级”或“加入班级”开始吧！</p>
+            </div>
+
+            <!-- 班级卡片容器 (必须有 id="projects-container") -->
+            <div id="projects-container" class="project-grid">
+                <!-- 项目卡片由 JS 动态生成 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 创建班级弹窗 -->
+    <div class="modal" id="create-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🏫 创建新班级</div>
+                <div class="modal-close" onclick="closeModal('create-modal')">&times;</div>
+            </div>
+            <form id="create-form" onsubmit="event.preventDefault(); createProject();">
+                <div class="form-group">
+                    <label class="form-label">班级名称</label>
+                    <input type="text" class="layui-input" id="project-name" placeholder="例如：2024级软件工程1班" required>
+                    <div class="error-text" id="project-name-error"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">班级描述</label>
+                    <textarea class="layui-input" id="project-desc" rows="3" placeholder="例如：本学期实训课程班级，用于小组展示与评分"></textarea>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="layui-btn layui-btn-primary" onclick="closeModal('create-modal')">取消</button>
+                    <button type="submit" class="layui-btn">确认创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 加入班级弹窗 -->
+    <div class="modal" id="join-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🔑 加入班级</div>
+                <div class="modal-close" onclick="closeModal('join-modal')">&times;</div>
+            </div>
+            <form id="join-form" onsubmit="event.preventDefault(); joinProject();">
+                <div class="form-group" style="text-align: center;">
+                    <label class="form-label">请输入6位数字邀请码</label>
+                    <input type="text" class="layui-input" id="invite-code" placeholder="000000" maxlength="6" required
+                        style="font-size: 28px; text-align: center; letter-spacing: 8px; font-family: monospace; width: 200px; margin: 10px auto;">
+                    <div style="color: #909399; font-size: 13px; margin-top: 8px;">请向老师索取班级邀请码</div>
+                    <div class="error-text" id="invite-code-error"></div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="button" class="layui-btn layui-btn-primary" onclick="closeModal('join-modal')">取消</button>
+                    <button type="submit" class="layui-btn layui-btn-warm">确认加入</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.8.0/dist/layui.js"></script>
+    <script src="js/Bmob-3.0.2.min.js"></script>
+    <script src="js/bmob_init.js"></script>
+    <script src="js/common_lh.js"></script>
+    <script src="js/index_lh.js"></script>
+</body>
+</html>
