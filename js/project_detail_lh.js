@@ -77,10 +77,27 @@ function bindEvents() {
     document.getElementById('end-display-btn').addEventListener('click', endCurrentDisplay);
 }
 
-// ==================== Bmob云端同步 ====================
+// ==================== Bmob云端同步（🔒 防覆盖版本） ====================
 async function syncCurrentProject() {
-    if (!currentProject || !currentProject.objectId) return;
-    await updateProjectToCloud(currentProject.objectId, {
+    if (!currentProject || !currentProject.objectId) {
+        console.error('❌ syncCurrentProject: 缺少项目ID');
+        throw new Error('项目数据不完整：缺少objectId');
+    }
+    
+    // 传递当前版本号（如果有）
+    var localVersion = currentProject.dataVersion || 0;  // ✅ 修复：使用dataVersion
+    
+    console.log('📤 开始安全同步（版本:', localVersion, '）:', {
+        objectId: currentProject.objectId,
+        projectName: currentProject.name,
+        membersCount: (currentProject.members || []).length,
+        groupsCount: (currentProject.groups || []).length,
+        totalRatings: countTotalRatings(),
+        updateTime: currentProject.updateTime
+    });
+    
+    var projectData = {
+        dataVersion: localVersion,  // ✅ 修复：传递版本号用于冲突检测
         name: currentProject.name,
         members: currentProject.members,
         groups: currentProject.groups,
@@ -90,7 +107,39 @@ async function syncCurrentProject() {
         showFinished: currentProject.showFinished,
         logs: currentProject.logs,
         updateTime: currentProject.updateTime
+    };
+    
+    try {
+        var result = await updateProjectToCloud(currentProject.objectId, projectData);
+        
+        if (result.merged) {
+            console.log('🔄 检测到数据已合并（防止了数据丢失）');
+            showToast('⚠️ 检测到其他人的更新，已自动合并', 'warning', 3000);
+            
+            // 重要：重新加载合并后的数据到内存！
+            await loadProjectDetail(currentProject.objectId);
+        } else {
+            // 更新本地版本号
+            currentProject.dataVersion = result.version;  // ✅ 修复：更新dataVersion
+            console.log('✅ 同步成功，新版本:', result.version);
+        }
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ 项目同步失败:', error);
+        throw error;
+    }
+}
+
+function countTotalRatings() {
+    var total = 0;
+    (currentProject.groups || []).forEach(function(group) {
+        if (group.memberRatings) {
+            total += group.memberRatings.length;
+        }
     });
+    return total;
 }
 function openEditNameModal() {
     var currentUser = getCurrentUser();
@@ -564,41 +613,140 @@ function closeRatingModal() {
 async function submitRating() {
     var targetUserId = window._ratingTargetUserId;
     if (!targetUserId) return;
+    
     var designScore = parseFloat(document.getElementById('rating-design').value);
     var functionScore = parseFloat(document.getElementById('rating-function').value);
     var uiScore = parseFloat(document.getElementById('rating-ui').value);
-    if (isNaN(designScore) || isNaN(functionScore) || isNaN(uiScore) ||
-        designScore < 0 || designScore > 10 || functionScore < 0 || functionScore > 10 || uiScore < 0 || uiScore > 10) {
-        showToast('每项评分请输入0-10之间的数字', 'error');
+    
+    if (isNaN(designScore) || isNaN(functionScore) || isNaN(uiScore)) {
+        showToast('⚠️ 请输入有效的数字分数', 'error');
         return;
     }
+
+    var originalDesign = designScore;
+    var originalFunction = functionScore;
+    var originalUi = uiScore;
+
+    designScore = Math.min(Math.max(0, designScore), 10);
+    functionScore = Math.min(Math.max(0, functionScore), 10);
+    uiScore = Math.min(Math.max(0, uiScore), 10);
+
+    var hasAdjusted = (originalDesign !== designScore || originalFunction !== functionScore || originalUi !== uiScore);
+    if (hasAdjusted) {
+        document.getElementById('rating-design').value = designScore;
+        document.getElementById('rating-function').value = functionScore;
+        document.getElementById('rating-ui').value = uiScore;
+        showToast('📊 分数已自动调整到 0-10 分范围内', 'warning');
+    }
+    
     var currentUser = getCurrentUser();
     var userId = currentUser.objectId || currentUser.id;
     var myGroup = findUserGroup(userId);
     if (!myGroup) { showToast('你不在任何小组中', 'error'); return; }
+    
     var grpIdx = currentProject.groups.findIndex(function(g) { return g.id === myGroup.id; });
-    if (!currentProject.groups[grpIdx].memberRatings) currentProject.groups[grpIdx].memberRatings = [];
+    if (grpIdx === -1) {
+        showToast('❌ 未找到你的小组信息', 'error');
+        return;
+    }
+    
+    if (!currentProject.groups[grpIdx]) {
+        showToast('❌ 小组数据异常', 'error');
+        console.error('小组索引无效:', grpIdx, '总组数:', currentProject.groups.length);
+        return;
+    }
+    
+    if (!currentProject.groups[grpIdx].memberRatings) {
+        currentProject.groups[grpIdx].memberRatings = [];
+    }
 
     var targetMember = currentProject.members.find(function(m) { return m.userId == targetUserId; });
     var existingIdx = currentProject.groups[grpIdx].memberRatings.findIndex(function(r) {
         return r.raterId == userId && r.targetUserId == targetUserId;
     });
+    
     var ratingData = {
-        raterId: userId, raterName: currentUser.username,
-        targetUserId: targetUserId, targetName: targetMember ? targetMember.username : '',
-        designScore: designScore, functionScore: functionScore, uiScore: uiScore,
-        time: new Date().toLocaleString()
+        raterId: userId, 
+        raterName: currentUser.username,
+        targetUserId: targetUserId, 
+        targetName: targetMember ? targetMember.username : '',
+        designScore: designScore, 
+        functionScore: functionScore, 
+        uiScore: uiScore,
+        time: new Date().toLocaleString(),
+        savedToCloud: false  // 标记是否已保存到云端
     };
+    
     if (existingIdx !== -1) {
         currentProject.groups[grpIdx].memberRatings[existingIdx] = ratingData;
+        console.log('✏️ 更新已有评价:', ratingData.raterName, '→', ratingData.targetName);
     } else {
         currentProject.groups[grpIdx].memberRatings.push(ratingData);
+        console.log('➕ 新增评价:', ratingData.raterName, '→', ratingData.targetName);
     }
+    
     currentProject.updateTime = new Date().toLocaleString();
-    await syncCurrentProject();
-    closeRatingModal();
-    renderMyGroupRatings();
-    showToast('评价提交成功！', 'success');
+    
+    var submitBtn = document.querySelector('#rating-modal .layui-btn:not(.layui-btn-primary)');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ 保存中...';
+    }
+    
+    try {
+        console.log('🚀 开始同步到云端...');
+        console.log('📦 待保存数据预览:', {
+            projectId: currentProject.objectId,
+            groupName: myGroup.name,
+            ratingsCount: currentProject.groups[grpIdx].memberRatings.length,
+            lastRating: ratingData
+        });
+        
+        await syncCurrentProject();
+        
+        console.log('✅ 云端同步成功！');
+        
+        ratingData.savedToCloud = true;
+        
+        closeRatingModal();
+        renderMyGroupRatings();
+        showToast('✅ 评价已成功保存到云端！', 'success');
+        
+    } catch (error) {
+        console.error('❌ 云端同步失败:', error);
+        console.error('错误详情:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+        });
+        
+        var errorMsg = '💾 保存失败';
+        if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+            errorMsg = '⏰ 网络超时，请检查网络后重试';
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            errorMsg = '🔒 登录已过期，请重新登录';
+        } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+            errorMsg = '🚫 无权限操作，请联系老师';
+        } else if (error.message.includes('Network') || error.message.includes('network')) {
+            errorMsg = '🌐 网络连接失败，请检查网络';
+        } else if (error.message) {
+            errorMsg = '❌ 保存失败: ' + error.message;
+        }
+        
+        showToast(errorMsg + '（数据暂存在本地）', 'error');
+        
+        setTimeout(function() {
+            if (confirm('⚠️ 评分未能保存到云端\n\n错误信息: ' + error.message + '\n\n是否重试？')) {
+                submitRating();
+            }
+        }, 1000);
+        
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交评价';
+        }
+    }
 }
 
 function renderMemberRating() {

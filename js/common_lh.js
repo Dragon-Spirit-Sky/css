@@ -199,17 +199,404 @@ async function saveProjectToCloud(project) {
     return res.objectId;
 }
 
-// 更新项目到云端
+// 更新项目到云端（🔒 防覆盖版本：带版本控制+智能合并）
 async function updateProjectToCloud(objectId, projectData) {
-    const query = Bmob.Query('Projects');
-    query.set('id', objectId);
-    for (var key in projectData) {
-        if (projectData.hasOwnProperty(key)) {
-            query.set(key, projectData[key]);
-        }
+    if (!objectId) {
+        console.error('❌ updateProjectToCloud: objectId 为空');
+        throw new Error('项目ID不能为空');
     }
-    await query.save();
+    
+    if (!projectData || typeof projectData !== 'object') {
+        console.error('❌ updateProjectToCloud: projectData 无效', projectData);
+        throw new Error('项目数据无效');
+    }
+    
+    console.log('🔒 开始安全同步（防覆盖模式）:', {
+        objectId: objectId,
+        keys: Object.keys(projectData),
+        dataSize: JSON.stringify(projectData).length + ' bytes',
+        localVersion: projectData.dataVersion || '未设置'
+    });
+    
+    try {
+        // 步骤1: 先获取云端最新数据（防止覆盖）
+        console.log('📥 步骤1: 获取云端最新数据...');
+        const cloudQuery = Bmob.Query('Projects');
+        const cloudData = await cloudQuery.get(objectId);
+        
+        if (!cloudData) {
+            throw new Error('云端项目不存在，可能已被删除');
+        }
+        
+        console.log('✅ 云端数据获取成功:', {
+            cloudVersion: cloudData.dataVersion || '无版本号',
+            cloudUpdate: cloudData.updateTime,
+            hasGroups: !!(cloudData.groups && cloudData.groups.length > 0)
+        });
+        
+        // 步骤2: 版本冲突检测
+        var localVersion = projectData.dataVersion || 0;
+        var cloudVersion = cloudData.dataVersion || 0;
+        
+        if (localVersion && cloudVersion && localVersion < cloudVersion) {
+            console.warn('⚠️ 检测到版本冲突！', {
+                localVersion: localVersion,
+                cloudVersion: cloudVersion,
+                message: '云端已被其他人更新'
+            });
+            console.log('🔄 开始智能合并...');
+            
+            // 步骤3: 智能合并数据（关键！）
+            var mergedData = mergeProjectData(cloudData, projectData);
+            
+            console.log('🔄 数据合并完成:', {
+                mergedRatingsCount: countTotalRatingsInData(mergedData.groups),
+                cloudRatingsCount: countTotalRatingsInData(cloudData.groups),
+                localRatingsCount: countTotalRatingsInData(projectData.groups)
+            });
+            
+            // 使用合并后的数据
+            projectData = mergedData;
+        } else {
+            // 没有冲突，正常更新
+            console.log('✅ 无版本冲突，直接更新');
+        }
+        
+        // 步骤4: 更新版本号
+        var newVersion = Math.max(localVersion, cloudVersion) + 1;
+        projectData.dataVersion = newVersion;  // ✅ 修复：不用_开头
+        projectData.lastSyncTime = new Date().toISOString();  // ✅ 修复：不用_开头
+        
+        console.log('📤 步骤4: 准备保存（版本:', newVersion, ')');
+        
+        // 统计评价记录
+        if (projectData.groups) {
+            var totalRatings = 0;
+            projectData.groups.forEach(function(group, idx) {
+                if (group.memberRatings) {
+                    totalRatings += group.memberRatings.length;
+                    console.log(`  📁 小组${idx + 1}: ${group.memberRatings.length} 条评价`);
+                }
+            });
+            console.log(`📊 总计保存: ${totalRatings} 条评价记录`);
+        }
+        
+        // 步骤5: 执行保存
+        const saveQuery = Bmob.Query('Projects');
+        saveQuery.set('id', objectId);
+        
+        for (var key in projectData) {
+            if (projectData.hasOwnProperty(key)) {
+                var value = projectData[key];
+                var valueSize = JSON.stringify(value).length;
+                
+                if (valueSize > 100000) {
+                    console.warn(`⚠️ 大字段 ${key}: ${(valueSize/1024).toFixed(1)}KB`);
+                }
+                
+                saveQuery.set(key, value);
+            }
+        }
+        
+        console.log('⏳ 正在调用 Bmob API...');
+        var startTime = Date.now();
+        
+        await saveQuery.save();
+        
+        var duration = Date.now() - startTime;
+        console.log(`✅ 保存成功! 版本:${newVersion}, 耗时:${duration}ms`);
+        
+        return {
+            success: true,
+            version: newVersion,
+            duration: duration,
+            merged: (localVersion < cloudVersion)
+        };
+        
+    } catch (error) {
+        console.error('❌ 保存失败:', error);
+        var parsedError = parseBmobError(error);
+        throw new Error(parsedError.message || error.message);
+    }
 }
+
+// 智能合并两个版本的项目数据（核心算法）
+function mergeProjectData(cloudData, localData) {
+    console.log('🔄 开始智能合并...');
+    
+    var merged = JSON.parse(JSON.stringify(cloudData));  // 以云端为基础
+    
+    // 合并基本信息（以本地为准，因为这是用户主动修改的）
+    if (localData.name) merged.name = localData.name;
+    if (localData.members) merged.members = localData.members;
+    if (localData.inviteCode !== undefined) merged.inviteCode = localData.inviteCode;
+    if (localData.inviteExpireTime !== undefined) merged.inviteExpireTime = localData.inviteExpireTime;
+    if (localData.displayGroupId !== undefined) merged.displayGroupId = localData.displayGroupId;
+    if (localData.showFinished !== undefined) merged.showFinished = localData.showFinished;
+    if (localData.logs) merged.logs = localData.logs;
+    if (localData.updateTime) merged.updateTime = localData.updateTime;
+    
+    // 关键：智能合并小组和评价数据（保留所有评价！）
+    if (localData.groups && cloudData.groups) {
+        merged.groups = mergeGroupsWithRatings(cloudData.groups, localData.groups);
+    } else if (localData.groups) {
+        merged.groups = localData.groups;
+    }
+    
+    console.log('✅ 合并完成');
+    return merged;
+}
+
+// 合并小组数据（特别处理评价记录，确保不丢失）
+function mergeGroupsWithRatings(cloudGroups, localGroups) {
+    var mergedGroups = [];
+    
+    // 以本地组为基础
+    localGroups.forEach(function(localGroup, idx) {
+        var mergedGroup = JSON.parse(JSON.stringify(localGroup));
+        
+        // 找到对应的云端组
+        var cloudGroup = cloudGroups.find(function(g) { return g.id === localGroup.id; });
+        
+        if (cloudGroup) {
+            // 合并评价记录（取并集，不丢失任何一条！）
+            if (cloudGroup.memberRatings || localGroup.memberRatings) {
+                var allRatings = {};
+                
+                // 先添加云端的评价
+                (cloudGroup.memberRatings || []).forEach(function(rating) {
+                    var key = rating.raterId + '_' + rating.targetUserId;
+                    allRatings[key] = rating;
+                });
+                
+                // 再添加/覆盖本地的评价（本地优先）
+                (localGroup.memberRatings || []).forEach(function(rating) {
+                    var key = rating.raterId + '_' + rating.targetUserId;
+                    allRatings[key] = rating;  // 本地的会覆盖云端的（更新版本）
+                });
+                
+                // 转换回数组
+                mergedGroup.memberRatings = Object.values(allRatings);
+                
+                console.log(`  📁 组"${localGroup.name}" 合并评价:`, {
+                    cloudCount: (cloudGroup.memberRatings || []).length,
+                    localCount: (localGroup.memberRatings || []).length,
+                    mergedCount: mergedGroup.memberRatings.length
+                });
+            }
+            
+            // 保留其他字段（以本地为准）
+            if (localGroup.ratingAssignments) {
+                mergedGroup.ratingAssignments = localGroup.ratingAssignments;
+            }
+        }
+        
+        mergedGroups.push(mergedGroup);
+    });
+    
+    // 添加云端有但本地没有的组（防止删除）
+    cloudGroups.forEach(function(cloudGroup) {
+        var exists = mergedGroups.find(function(g) { return g.id === cloudGroup.id; });
+        if (!exists) {
+            console.log(`  ➕ 保留云端新增组: "${cloudGroup.name}"`);
+            mergedGroups.push(JSON.parse(JSON.stringify(cloudGroup)));
+        }
+    });
+    
+    return mergedGroups;
+}
+
+function countTotalRatingsInData(groups) {
+    if (!groups) return 0;
+    var total = 0;
+    groups.forEach(function(group) {
+        if (group.memberRatings) {
+            total += group.memberRatings.length;
+        }
+    });
+    return total;
+}
+
+// 解析Bmob错误信息
+function parseBmobError(error) {
+    var result = {
+        code: error.code || 'UNKNOWN',
+        message: error.message || '未知错误',
+        suggestion: ''
+    };
+    
+    switch(result.code) {
+        case 100:
+            result.message = '无法连接到Bmob服务器';
+            result.suggestion = '请检查网络连接';
+            break;
+        case 101:
+            result.message = '对象不存在或无权限访问';
+            result.suggestion = '请检查objectId是否正确，或确认登录状态';
+            break;
+        case 102:
+            result.message = '用户名或密码错误';
+            result.suggestion = '请重新登录';
+            break;
+        case 124:
+            result.message = '请求超时';
+            result.suggestion = '请检查网络后重试';
+            break;
+        case 137:
+            result.message = '文件过大';
+            result.suggestion = '项目数据超过限制，请联系管理员';
+            break;
+        case 139:
+            result.message = 'API调用频率超限';
+            result.suggestion = '请稍后再试';
+            break;
+        case 153:
+            result.message = '权限被拒绝';
+            result.suggestion = '你可能没有修改此项目的权限';
+            break;
+        default:
+            if (error.message && error.message.includes('timeout')) {
+                result.code = 'TIMEOUT';
+                result.message = '网络请求超时';
+                result.suggestion = '网络较慢，请重试';
+            } else if (error.message && error.message.includes('Network')) {
+                result.code = 'NETWORK';
+                result.message = '网络连接失败';
+                result.suggestion = '请检查网络设置';
+            } else if (error.message && error.message.includes('401')) {
+                result.code = 'UNAUTHORIZED';
+                result.message = '未授权或登录过期';
+                result.suggestion = '请重新登录';
+            }
+    }
+    
+    return result;
+}
+
+// ==================== 数据诊断工具（用于排查丢失问题）====================
+
+// 检查项目数据完整性
+async function diagnoseProjectData(projectId) {
+    console.log('🔍 开始诊断项目数据...');
+    
+    try {
+        var project = await fetchProjectById(projectId);
+        
+        if (!project) {
+            console.error('❌ 项目不存在:', projectId);
+            return { valid: false, error: '项目不存在' };
+        }
+        
+        var diagnosis = {
+            projectId: projectId,
+            projectName: project.name,
+            version: project.dataVersion || '无版本号',  // ✅ 修复
+            lastUpdate: project.updateTime,
+            lastSync: project.lastSyncTime || '未知',  // ✅ 修复
+            timestamp: new Date().toISOString(),
+            
+            // 统计信息
+            membersCount: (project.members || []).length,
+            groupsCount: (project.groups || []).length,
+            totalRatings: 0,
+            ratingsByGroup: [],
+            
+            // 问题检测
+            issues: [],
+            warnings: []
+        };
+        
+        // 检查评价数据
+        (project.groups || []).forEach(function(group, idx) {
+            var groupInfo = {
+                groupId: group.id,
+ groupName: group.name || '未命名组',
+                memberCount: (group.members || []).length,
+                ratingsCount: (group.memberRatings || []).length,
+                hasAssignments: !!(group.ratingAssignments && group.ratingAssignments.shuffled),
+                issues: []
+            };
+            
+            diagnosis.totalRatings += groupInfo.ratingsCount;
+            
+            // 检查评价记录的完整性
+            if (group.memberRatings && group.memberRatings.length > 0) {
+                var ratingKeys = {};
+                group.memberRatings.forEach(function(rating, rIdx) {
+                    var key = rating.raterId + '_' + rating.targetUserId;
+                    
+                    // 检查重复
+                    if (ratingKeys[key]) {
+                        groupInfo.issues.push(`重复评价 #${rIdx}: ${rating.raterName}→${rating.targetName}`);
+                        diagnosis.warnings.push(`组"${group.name}"发现重复评价`);
+                    }
+                    ratingKeys[key] = true;
+                    
+                    // 检查必填字段
+                    if (!rating.raterId) groupInfo.issues.push(`评价 #${rIdx} 缺少raterId`);
+                    if (!rating.targetUserId) groupInfo.issues.push(`评价 #${rIdx} 缺少targetUserId`);
+                    if (rating.designScore === undefined || rating.functionScore === undefined || rating.uiScore === undefined) {
+                        groupInfo.issues.push(`评价 #${rIdx} 分数不完整`);
+                    }
+                });
+            }
+            
+            // 检查是否有分配但没完成的情况
+            if (groupInfo.hasAssignments && group.ratingAssignments.assignments) {
+                var expectedRatings = 0;
+                group.ratingAssignments.assignments.forEach(function(a) {
+                    expectedRatings += a.targetIds.length;
+                });
+                
+                if (groupInfo.ratingsCount < expectedRatings) {
+                    groupInfo.issues.push(`评价进度: ${groupInfo.ratingsCount}/${expectedRatings}`);
+                }
+            }
+            
+            if (groupInfo.issues.length > 0) {
+                diagnosis.issues.push({
+                    type: 'group',
+                    groupIndex: idx,
+                    groupName: group.name,
+                    problems: groupInfo.issues
+                });
+            }
+            
+            diagnosis.ratingsByGroup.push(groupInfo);
+        });
+        
+        // 总体评估
+        if (diagnosis.totalRatings === 0 && diagnosis.groupsCount > 0) {
+            diagnosis.warnings.push('⚠️ 所有小组都没有评价记录');
+        }
+        
+        if (!project.dataVersion) {  // ✅ 修复
+            diagnosis.warnings.push('⚠️ 项目没有版本号（可能未启用防覆盖功能）');
+        }
+        
+        console.log('📊 诊断结果:', diagnosis);
+        
+        return diagnosis;
+        
+    } catch (error) {
+        console.error('❌ 诊断失败:', error);
+        return { valid: false, error: error.message };
+    }
+}
+
+// 在浏览器控制台调用此函数查看详细诊断
+// 用法: window.diagnoseCurrentProject()
+window.diagnoseCurrentProject = async function() {
+    if (typeof currentProject !== 'undefined' && currentProject && currentProject.objectId) {
+        return await diagnoseProjectData(currentProject.objectId);
+    } else {
+        console.error('❌ 当前页面没有加载项目数据');
+        return null;
+    }
+};
+
+console.log('✅ 数据诊断工具已加载');
+console.log('💡 使用方法: 在浏览器控制台输入 await window.diagnoseCurrentProject()');
 
 // 从云端获取所有项目
 async function fetchAllProjects() {
